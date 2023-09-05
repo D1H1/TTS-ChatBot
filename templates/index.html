@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<style>
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* General Settings */
+body, html {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: #f2f2f2;
+}
+
+/* Top Menu */
+#top-menu {
+    background-color: black;
+    color: white;
+    padding: 10px;
+    text-align: right;
+}
+
+/* Chat Window */
+#chat-window {
+    width: 40%;
+    margin: auto;
+    background-color: white;
+    border: 2px solid lightblue;
+    padding: 20px;
+    height: 80vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* User Message */
+.user-message {
+    animation: slideInFromRight 0.4s ease-out;
+    margin: 15px;
+    padding: 10px;
+    background-color: lightblue;
+    border-radius: 15px;
+    text-align: right;
+    align-self: flex-end;
+}
+
+/* Bot Message */
+.bot-message {
+    animation: slideInFromLeft 0.4s ease-out;
+    margin: 15px;
+    padding: 10px;
+    background-color: #d9d9d9;
+    border-radius: 15px;
+    text-align: left;
+    align-self: flex-start;
+}
+
+/* Audio from Bot */
+.bot-audio {
+    background-color: #333;
+    color: white;
+    border-radius: 15px;
+    padding: 10px;
+    margin: 15px;
+    text-align: center;
+    align-self: flex-start;
+}
+
+/* Message Input Box */
+#message-box {
+    box-sizing: border-box;  /* Add this line */
+    width: 40%;
+    margin: auto;
+    padding: 20px;
+    background-color: #333;
+    color: white;
+    overflow-x: hidden;
+}
+
+#message-input {
+    width: 80%;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+#send-button, #voice-button {
+    padding: 10px 20px;
+    margin-left: 10px;
+    border-radius: 10px;
+    background-color: lightblue;
+    border: none;
+    cursor: pointer;
+}
+
+
+.user-message {
+    background-color: lightblue;
+    padding: 10px;
+    border-radius: 8px;
+    margin: 10px;
+    width: auto;
+    display: inline-block;
+}
+
+.button-icon-send {
+  width: 12px;
+  height: 12px;
+}
+
+.button-icon-record {
+  width: 16px;
+  height: 16px;
+}
+
+/* Overall Scrollbar Styling */
+::-webkit-scrollbar {
+  width: 10px;  /* for vertical scrollbars */
+  height: 10px; /* for horizontal scrollbars */
+}
+
+/* Track */
+::-webkit-scrollbar-track {
+  background: rgba(51, 51, 51, 0.0);
+}
+
+/* Handle */
+::-webkit-scrollbar-thumb {
+  background: rgba(71, 71, 71, 0.05);
+}
+
+/* Handle on hover */
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(91, 91, 91, 0.1);
+}
+
+/* Firefox */
+#message-box {
+  scrollbar-color: #666 rgba(51, 51, 51, 0.5);
+}
+
+
+
+</style>
+
+<body>
+    <!-- Chat Window -->
+    <div id="chat-window">
+        <div class="bot-message">Hi, how can I help you?</div>
+        <div class="user-message">Tell me more about your products.</div>
+        <div class="bot-audio">Playing audio...</div>
+    </div>
+
+    <!-- Message Box -->
+    <div id="message-box">
+        <input type="text" id="message-input" placeholder="Type your message...">
+        <!-- Send Button -->
+        <button id="send-button"><img src="{{ url_for('static', filename='send_message.png') }}" class="button-icon-send" id="send-icon" alt="Send"></button>
+
+        <!-- Voice Record Button -->
+        <button id="toggle-recording"><img src="{{ url_for('static', filename='play_button.png') }}" class="button-icon-record" id="record-icon" alt="Record"></button>
+    </div>
+
+    <div id="chat-box">
+        <!-- Messages will be appended here -->
+    </div>
+
+<script>
+    function sendMessage() {
+        let userMessage = $("#user-input").val();
+        $("#user-input").val("");
+
+        // Add the user message to the chat box
+        $("#chat-box").append(`<div class="user-message">You: ${userMessage}</div>`);
+
+        // Make an AJAX call to get the bot's reply (assuming you have a Flask route for that)
+        $.ajax({
+            url: "/get_reply",  // Update this URL to wherever your Flask route is
+            method: "POST",
+            data: {
+                message: userMessage
+            },
+            success: function(data) {
+                // Add the bot's reply to the chat box
+                $("#chat-box").append(`<div class="bot-audio">Bot: ${data.bot_response}</div>`);
+            }
+        });
+    }
+document.addEventListener("DOMContentLoaded", function() {
+    const sendButton = document.getElementById('send-button');
+    const messageInput = document.getElementById('message-input');
+    const chatBox = document.getElementById('chat-window');
+
+    // Function to send the user message
+    const sendMessage = () => {
+        const userMessage = messageInput.value;
+
+        if (userMessage.trim() === '') return;
+
+        const newUserMessageDiv = document.createElement('div');
+        newUserMessageDiv.textContent = userMessage;
+        newUserMessageDiv.classList.add('user-message');
+
+        chatBox.appendChild(newUserMessageDiv);
+        messageInput.value = '';
+
+        // AJAX to get bot's reply
+        $.ajax({
+            url: "/get_reply",
+            method: "POST",
+            data: {message: userMessage},
+            success: function(data) {
+                const newBotMessageDiv = document.createElement('div');
+                newBotMessageDiv.textContent = data.bot_response;
+                newBotMessageDiv.classList.add('bot-message');
+                chatBox.appendChild(newBotMessageDiv);
+
+                chatBox.scrollTop = chatBox.scrollHeight;  // Automatically scroll to the bottom
+            }
+        });
+    };
+
+    sendButton.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keyup', function(event) {
+        if (event.key === 'Enter') {
+            sendMessage();
+        }
+    });
+
+    let mediaRecorder;
+    let audioChunks = [];
+    let isRecording = false;
+    const toggleButton = document.getElementById('toggle-recording');
+
+    navigator.mediaDevices.getUserMedia({ audio: true })
+    .then(stream => {
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = event => {
+            audioChunks.push(event.data);
+        };
+
+        mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+            const audioUrl = URL.createObjectURL(audioBlob);
+
+            const newAudioDiv = document.createElement('div');
+            newAudioDiv.classList.add('user-message');
+            newAudioDiv.classList.add('sending-animation');
+
+            const audioElement = document.createElement('audio');
+            audioElement.src = audioUrl;
+            audioElement.controls = true;
+            newAudioDiv.appendChild(audioElement);
+
+            chatBox.appendChild(newAudioDiv);
+
+            // AJAX to send audio and get bot's reply
+            const formData = new FormData();
+            formData.append('audio', audioBlob);
+
+            $.ajax({
+                url: "/get_audio_reply",
+                method: "POST",
+                processData: false,
+                contentType: false,
+                data: formData,
+                success: function(data) {
+                    // Message div for text
+                    const newBotTextMessageDiv = document.createElement('div');
+                    newBotTextMessageDiv.classList.add('bot-message');
+
+                    const textDiv = document.createElement('div');
+                    textDiv.textContent = data.bot_response_text;
+                    newBotTextMessageDiv.appendChild(textDiv);
+
+                    chatBox.appendChild(newBotTextMessageDiv);
+
+                    // Message div for audio
+                    const newBotAudioMessageDiv = document.createElement('div');
+                    newBotAudioMessageDiv.classList.add('bot-message');
+
+                    // Decode base64 string to Blob
+                    const byteCharacters = atob(data.bot_response_audio);
+                    const byteNumbers = Array.from(byteCharacters, char => char.charCodeAt(0));
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const audioBlob = new Blob([byteArray], { type: 'audio/wav' });
+
+                    // Create an Object URL for the Blob
+                    const audioURL = URL.createObjectURL(audioBlob);
+
+                    const audioElement = document.createElement('audio');
+                    audioElement.src = audioURL;
+                    audioElement.controls = true;
+                    newBotAudioMessageDiv.appendChild(audioElement);
+
+                    chatBox.appendChild(newBotAudioMessageDiv);
+
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }
+            });
+
+
+            setTimeout(() => {
+                newAudioDiv.classList.remove('sending-animation');
+            }, 1000);
+
+            audioChunks = [];
+        };
+    });
+
+    const sendIcon = document.getElementById('send-icon');
+    const recordIcon = document.getElementById('record-icon');
+
+
+    var playButtonUrl = "{{ url_for('static', filename='play_button.png') }}";
+    var stopButtonUrl = "{{ url_for('static', filename='stop_button.png')}}";
+
+    toggleButton.addEventListener("click", () => {
+        const icon = toggleButton.querySelector('img');
+        if (isRecording) {
+            // Stop recording
+            icon.src = playButtonUrl;
+            mediaRecorder.stop();
+        } else {
+            // Start recording
+            icon.src = stopButtonUrl;
+            audioChunks = [];
+            mediaRecorder.start();
+        }
+        isRecording = !isRecording;
+    });
+});
+
+
+</script>
+
+</body>
+</html>

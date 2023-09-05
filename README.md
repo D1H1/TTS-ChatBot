@@ -4,6 +4,10 @@
 
 An interactive chatbot that utilizes Text-to-Speech (TTS) technology to provide audible replies alongside text-based responses.
 
+
+![Снимок экрана от 2023-09-05 18-59-56](https://github.com/D1H1/TTS-ChatBot/assets/94292673/4317987a-2b63-42de-88d0-aaa5ac027224)
+
+
 ## Features
 
 - Send and receive text messages from a chatbot.
